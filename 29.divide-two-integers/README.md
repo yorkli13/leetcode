@@ -85,7 +85,7 @@ INT_MIN = -2147483648
 
 它的绝对值比 `INT_MAX` 大 1，所以如果还在 32 位 `int` 范围里直接取绝对值，可能会溢出。
 
-因此实现时可以先把 `dividend` 和 `divisor` 转成更大范围的整数类型，再做绝对值和位移运算，这样逻辑会更直观，也更稳。
+因此实现时可以先把 `dividend` 和 `divisor` 转成更大范围的整数类型，再手动转成正数做位移运算，这样逻辑会更直观，也更稳。
 
 ## 解法：位运算 + 二进制拆分（推荐）
 
@@ -94,7 +94,7 @@ INT_MIN = -2147483648
 1. 先处理特殊情况：
    - 如果 `dividend == INT_MIN && divisor == -1`，结果会超过 `INT_MAX`，直接返回 `INT_MAX`
 2. 判断结果符号是否为负
-3. 把 `dividend` 和 `divisor` 转成更大范围整数，并取绝对值
+3. 把 `dividend` 和 `divisor` 转成更大范围整数，并手动转成正数
 4. 从高位到低位枚举 `shift`
 5. 如果 `(divisor << shift)` 仍然不大于当前被除数，说明商中可以包含这一位
 6. 就把这一位加入答案，并从被除数中减去对应值
@@ -144,20 +144,23 @@ divisor = 3
 
 ```cpp
 #include <climits>
-#include <cstdlib>
 using namespace std;
 
 class Solution {
 public:
     int divide(int dividend, int divisor) {
+        // 处理唯一越界情况
         if (dividend == INT_MIN && divisor == -1) {
             return INT_MAX;
         }
 
         bool negative = (dividend > 0) ^ (divisor > 0);
 
-        long long a = llabs((long long)dividend);
-        long long b = llabs((long long)divisor);
+        // 转成 long long 后再取正，避免 INT_MIN 取反溢出
+        long long a = dividend;
+        long long b = divisor;
+        if (a < 0) a = -a;
+        if (b < 0) b = -b;
 
         long long ans = 0;
         for (int shift = 31; shift >= 0; shift--) {
@@ -167,7 +170,8 @@ public:
             }
         }
 
-        return negative ? -(int)ans : (int)ans;
+        ans = negative ? -ans : ans;
+        return (int)ans;
     }
 };
 ```
